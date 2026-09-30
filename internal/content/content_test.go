@@ -148,6 +148,16 @@ func TestContentRuns(t *testing.T) {
 			}})
 		}
 	}
+	for _, gt := range c.Glossary {
+		if gt.Code == "" {
+			continue
+		}
+		gt := gt
+		jobs = append(jobs, job{"glossary/" + gt.ID, func() error {
+			_, err := goRun(map[string]string{"main.go": gt.Code}, "run", ".")
+			return err
+		}})
+	}
 	for _, ch := range c.Challenges {
 		ch := ch
 		jobs = append(jobs, job{"challenge/" + ch.ID, func() error {
