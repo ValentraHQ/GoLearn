@@ -166,9 +166,9 @@ export function Glossary() {
           terms.length === 0 ? (
             <p className="text-sm text-muted">No terms match “{filter}”.</p>
           ) : (
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {terms.map((t) => (
-                <Card key={t.id} className="scroll-mt-24 p-5">
+                <Card key={t.id} className="min-w-0 scroll-mt-24 p-5">
                   <h2 id={t.id} className="scroll-mt-24 text-lg font-semibold">{t.term}</h2>
                   <p className="mt-2 text-sm"><span className="font-semibold">In plain words: </span>{t.simple}</p>
                   <p className="mt-2 text-sm text-muted"><span className="font-semibold text-fg">Technically: </span>{t.technical}</p>
