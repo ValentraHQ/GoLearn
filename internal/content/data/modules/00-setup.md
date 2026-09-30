@@ -2,7 +2,7 @@
 id: setup
 number: 00
 track: core
-paths: beginner, pro
+paths: beginner
 skill: fundamentals
 summary: Install the toolchain, learn the go command, and run your first program.
 

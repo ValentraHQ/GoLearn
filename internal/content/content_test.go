@@ -128,6 +128,26 @@ func TestContentRuns(t *testing.T) {
 			}})
 		}
 	}
+	for _, l := range c.PublishedLessons() {
+		for _, q := range l.Quiz {
+			if q.Type != "output" || q.Code == "" {
+				continue
+			}
+			l, q := l, q
+			jobs = append(jobs, job{"quiz-output/" + l.ID + "/" + q.ID, func() error {
+				out, err := goRun(map[string]string{"main.go": wrapSnippet(q.Code)}, "run", ".")
+				if err != nil {
+					return fmt.Errorf("snippet does not run: %w", err)
+				}
+				got := strings.Join(strings.Split(strings.TrimRight(out, "\n"), "\n"), " / ")
+				want := q.Options[q.Correct[0]]
+				if got != want {
+					return fmt.Errorf("snippet prints %q but the marked answer is %q", got, want)
+				}
+				return nil
+			}})
+		}
+	}
 	for _, ch := range c.Challenges {
 		ch := ch
 		jobs = append(jobs, job{"challenge/" + ch.ID, func() error {
@@ -188,4 +208,19 @@ func goRun(files map[string]string, args ...string) (string, error) {
 		return stdout.String(), fmt.Errorf("%v\n%s%s", err, stdout.String(), stderr.String())
 	}
 	return stdout.String(), nil
+}
+
+// wrapSnippet turns a quiz snippet into a runnable program. Snippets that
+// define func main() are treated as top-level declarations; others are
+// placed inside main. Common imports are pre-declared and marked used.
+func wrapSnippet(code string) string {
+	const header = "package main\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os\"\n\t\"sort\"\n\t\"strconv\"\n\t\"strings\"\n\t\"sync\"\n\t\"time\"\n\t\"unicode/utf8\"\n)\n\n" +
+		"var (\n\t_ = errors.New\n\t_ = fmt.Sprint\n\t_ = os.Exit\n\t_ = sort.Ints\n\t_ = strconv.Itoa\n\t_ = strings.ToUpper\n\t_ sync.Mutex\n\t_ = time.Now\n\t_ = utf8.RuneLen\n)\n\n"
+	if strings.Contains(code, "package main") {
+		return code
+	}
+	if strings.Contains(code, "func main()") {
+		return header + code
+	}
+	return header + "func main() {\n" + code + "\n}\n"
 }
