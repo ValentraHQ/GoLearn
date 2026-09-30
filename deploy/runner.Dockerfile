@@ -5,8 +5,8 @@
 
 FROM golang:1.26-alpine AS entry
 WORKDIR /src
-COPY go.mod go.sum ./
-RUN go mod download
+# The entrypoint only uses the standard library, so no module download is needed.
+COPY go.mod ./
 COPY internal/runner ./internal/runner
 COPY cmd/sandbox-entrypoint ./cmd/sandbox-entrypoint
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/sandbox-entrypoint ./cmd/sandbox-entrypoint

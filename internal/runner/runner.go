@@ -9,6 +9,8 @@ package runner
 import (
 	"context"
 	"errors"
+	"fmt"
+	"regexp"
 )
 
 type Kind string
@@ -64,3 +66,33 @@ func (Disabled) Status(context.Context) Status {
 	return Status{Backend: "disabled", Reason: "Code execution is disabled on this server (GOLEARN_RUNNER=disabled)."}
 }
 func (Disabled) Run(context.Context, Request) (Result, error) { return Result{}, ErrUnavailable }
+
+// FileNameRe is the only file name shape the sandbox accepts.
+var FileNameRe = regexp.MustCompile(`^[a-z][a-z0-9_]{0,30}\.go$`)
+
+const (
+	maxFiles      = 4
+	maxTotalBytes = 96 << 10
+)
+
+// Validate rejects malformed requests before any container is started. The
+// sandbox entrypoint repeats the file name check as defence in depth.
+func (r Request) Validate() error {
+	if r.Kind != KindRun && r.Kind != KindTest {
+		return fmt.Errorf("unknown kind %q", r.Kind)
+	}
+	if len(r.Files) == 0 || len(r.Files) > maxFiles {
+		return fmt.Errorf("expected 1-%d files", maxFiles)
+	}
+	total := 0
+	for name, body := range r.Files {
+		if !FileNameRe.MatchString(name) {
+			return fmt.Errorf("invalid file name %q", name)
+		}
+		total += len(body)
+	}
+	if total > maxTotalBytes {
+		return errors.New("request too large")
+	}
+	return nil
+}

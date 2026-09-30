@@ -101,6 +101,9 @@ func (d *Docker) Status(ctx context.Context) Status {
 }
 
 func (d *Docker) Run(ctx context.Context, req Request) (Result, error) {
+	if err := req.Validate(); err != nil {
+		return Result{}, fmt.Errorf("invalid request: %w", err)
+	}
 	if st := d.Status(ctx); !st.Available {
 		return Result{}, fmt.Errorf("%w: %s", ErrUnavailable, st.Reason)
 	}

@@ -8,12 +8,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"syscall"
 	"time"
@@ -27,7 +27,7 @@ const (
 	buildLimit = 40 * time.Second
 )
 
-var fileRe = regexp.MustCompile(`^[a-z][a-z0-9_]{0,30}\.go$`)
+var fileRe = runner.FileNameRe
 
 func main() {
 	res := handle()
@@ -110,6 +110,10 @@ func execute(cmd *exec.Cmd, dir string, env []string, limit time.Duration) runne
 	if err != nil {
 		if ee, ok := err.(*exec.ExitError); ok {
 			res.ExitCode = ee.ExitCode()
+			if ws, ok := ee.Sys().(syscall.WaitStatus); ok && ws.Signaled() {
+				// Typically the kernel OOM killer when the memory limit is hit.
+				res.Stderr += fmt.Sprintf("\nProcess was killed by signal %q (often the memory limit).\n", ws.Signal())
+			}
 		} else {
 			res.ExitCode = 1
 			res.Stderr += err.Error()

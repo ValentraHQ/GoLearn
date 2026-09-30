@@ -72,8 +72,8 @@ func main() {
 			http.Error(w, "bad request", http.StatusBadRequest)
 			return
 		}
-		if req.Kind != runner.KindRun && req.Kind != runner.KindTest {
-			http.Error(w, "bad kind", http.StatusBadRequest)
+		if err := req.Validate(); err != nil {
+			http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 		if req.TimeoutSec < 1 || req.TimeoutSec > 30 {

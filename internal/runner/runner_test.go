@@ -148,9 +148,30 @@ esac
 		}
 	})
 	t.Run("bad file name", func(t *testing.T) {
-		res, _ := d.Run(ctx, Request{Kind: KindRun, TimeoutSec: 5, Files: map[string]string{"../evil.go": "package main"}})
-		if res.ExitCode == 0 {
-			t.Fatalf("expected rejection, got %+v", res)
+		if _, err := d.Run(ctx, Request{Kind: KindRun, TimeoutSec: 5, Files: map[string]string{"../evil.go": "package main"}}); err == nil {
+			t.Fatal("expected the request to be rejected before any container starts")
 		}
 	})
+}
+
+func TestRequestValidate(t *testing.T) {
+	ok := Request{Kind: KindRun, Files: map[string]string{"main.go": "package main"}}
+	if err := ok.Validate(); err != nil {
+		t.Fatalf("valid request rejected: %v", err)
+	}
+	bad := map[string]Request{
+		"unknown kind":   {Kind: "sh", Files: ok.Files},
+		"no files":       {Kind: KindRun},
+		"traversal":      {Kind: KindRun, Files: map[string]string{"../x.go": "x"}},
+		"absolute":       {Kind: KindRun, Files: map[string]string{"/etc/x.go": "x"}},
+		"not go":         {Kind: KindRun, Files: map[string]string{"run.sh": "x"}},
+		"uppercase":      {Kind: KindRun, Files: map[string]string{"Main.go": "x"}},
+		"too large":      {Kind: KindRun, Files: map[string]string{"main.go": strings.Repeat("a", maxTotalBytes+1)}},
+		"too many files": {Kind: KindRun, Files: map[string]string{"a.go": "", "b.go": "", "c.go": "", "d.go": "", "e.go": ""}},
+	}
+	for name, r := range bad {
+		if err := r.Validate(); err == nil {
+			t.Errorf("%s: expected rejection", name)
+		}
+	}
 }
