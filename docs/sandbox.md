@@ -37,7 +37,7 @@ The Go toolchain runs offline (`GOPROXY=off`), so learner programs cannot downlo
 2. **Access to the Docker socket is root-equivalent.** Whoever can talk to `/var/run/docker.sock` controls the host. That is why the API can run with `GOLEARN_RUNNER=remote`: only the small `runner-daemon` (authenticated with a bearer token, reachable only on an internal network) holds runtime access, and the internet-facing API holds none.
 3. **Challenge grading is not tamper-proof.** Results come from `go test -json` output produced *inside* the untrusted process. A determined learner could print fake result lines; the server requires a `pass` event for every expected test and a zero exit code, which stops the trivial cases (`os.Exit(0)`), but this is a learning platform, not a proctored exam. Cheating only affects the cheater's own progress.
 4. **Resource accounting is per run, not per user.** Rate limiting bounds overall load; add cgroup-level quotas on the runner nodes if you expect abuse.
-5. **The real Docker path was not exercised in the environment this repository was authored in** (no Docker daemon). The protocol, limits parsing, timeouts and output caps are tested through a shim; build the image and test the Playground yourself before launch.
+5. **Only runc was tested.** The Docker path has been exercised against a real daemon (see [production-readiness.md](production-readiness.md)), but not with gVisor, Kata or Firecracker, and not on a multi-node deployment. Repeat the checks on your own runner nodes before launch.
 
 ## Topologies
 

@@ -32,8 +32,9 @@ Learn → Understand → Code → Practice → Build → Review → Master
 
 - Go backend: unit + HTTP integration tests (SQLite in memory), `go vet` clean. Content is checked by compiling and running **every** example, exercise solution, quiz "predict the output" snippet, glossary snippet and challenge solution (with `-race`), and by asserting each starter fails its tests.
 - Frontend: strict `tsc`, 19 Vitest tests, and a Playwright walk-through of register → lesson → quiz → complete → dashboard/skills/achievements/search/projects on desktop and mobile widths.
-- Runner: the host↔container protocol, timeouts, output caps and build errors are tested with a shim that stands in for the `docker` CLI. **The real Docker path could not be exercised in the environment this was built in (no Docker daemon)** — build the runner image and try the Playground before relying on it.
-- PostgreSQL: the code path shares the SQL and a placeholder rewriter (unit-tested) with SQLite, but no live PostgreSQL instance was available for an integration run.
+- Runner: verified against a **real Docker daemon** (hello world, build errors, panics, timeouts, output/memory/PID/disk limits, network, filesystem and privilege probes, cleanup, up to 50 concurrent runs) directly and through the Compose topology (API → runner daemon → sandbox). Not tested: gVisor/Kata.
+- PostgreSQL: the store and API suites pass on PostgreSQL 16, the Compose stack runs on 17, and the live end-to-end test passes on both.
+- Full report, findings and remaining work: [docs/production-readiness.md](docs/production-readiness.md).
 
 ## Quick start
 
