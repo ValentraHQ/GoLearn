@@ -198,12 +198,17 @@ func RequireCSRFHeader(next http.Handler) http.Handler {
 	})
 }
 
-// ClientIP returns the caller's IP, honouring X-Forwarded-For only when trusted.
+// ClientIP returns the caller's IP. With trustProxy it uses the last
+// X-Forwarded-For entry — the address our own (single) trusted proxy appended.
+// Earlier entries are client-supplied and would let a caller dodge per-IP rate
+// limits by rotating fake addresses.
 func ClientIP(r *http.Request, trustProxy bool) string {
 	if trustProxy {
 		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			first, _, _ := strings.Cut(xff, ",")
-			return strings.TrimSpace(first)
+			parts := strings.Split(xff, ",")
+			if last := strings.TrimSpace(parts[len(parts)-1]); last != "" {
+				return last
+			}
 		}
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)

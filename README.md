@@ -107,7 +107,7 @@ docs/                  sandbox and content-authoring guides
 | `DATABASE_URL` | `sqlite:golearn.db` | `postgres://…` or `sqlite:path` (`sqlite::memory:`) |
 | `GOLEARN_STATIC_DIR` | `web/dist` | built frontend (empty disables static serving) |
 | `GOLEARN_COOKIE_SECURE` | `false` | set `true` behind HTTPS |
-| `GOLEARN_TRUST_PROXY` | `false` | trust `X-Forwarded-For` (only behind your own proxy) |
+| `GOLEARN_TRUST_PROXY` | `false` | use the last `X-Forwarded-For` entry as the client IP — only behind exactly one proxy you control that appends it |
 | `GOLEARN_BCRYPT_COST` | `12` | password hashing cost |
 | `GOLEARN_RUNNER` | `docker` | `docker`, `remote` or `disabled` |
 | `GOLEARN_RUNNER_IMAGE` | `golearn-runner:latest` | sandbox image |
