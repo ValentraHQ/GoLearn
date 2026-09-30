@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -61,7 +62,9 @@ func (r *Remote) Status(ctx context.Context) Status {
 		st.Reason = "The code runner service is not reachable."
 	case resp.StatusCode != http.StatusOK:
 		resp.Body.Close()
-		st.Reason = fmt.Sprintf("The code runner service returned %s.", resp.Status)
+		// Detail stays in the logs: this reason is shown to anonymous visitors.
+		slog.Warn("runner service status check failed", "status", resp.Status)
+		st.Reason = "The code runner service is not available."
 	default:
 		defer resp.Body.Close()
 		var remote Status
@@ -85,7 +88,8 @@ func (r *Remote) Run(ctx context.Context, req Request) (Result, error) {
 	}
 	resp, err := r.do(ctx, http.MethodPost, "/v1/run", body)
 	if err != nil {
-		return Result{}, fmt.Errorf("%w: runner service unreachable", ErrUnavailable)
+		slog.Warn("runner service unreachable", "err", err)
+		return Result{}, fmt.Errorf("%w: the code runner is not available right now", ErrUnavailable)
 	}
 	defer resp.Body.Close()
 	switch resp.StatusCode {
@@ -93,7 +97,8 @@ func (r *Remote) Run(ctx context.Context, req Request) (Result, error) {
 	case http.StatusServiceUnavailable:
 		return Result{}, ErrBusy
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return Result{}, fmt.Errorf("%w: runner rejected credentials", ErrUnavailable)
+		slog.Error("runner service rejected our credentials; check GOLEARN_RUNNER_TOKEN", "status", resp.Status)
+		return Result{}, fmt.Errorf("%w: the code runner is not available right now", ErrUnavailable)
 	default:
 		return Result{}, errors.New("runner service error: " + resp.Status)
 	}

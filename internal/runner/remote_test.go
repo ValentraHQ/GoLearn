@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -57,8 +58,16 @@ func TestRemoteBadTokenIsUnavailable(t *testing.T) {
 	if st := r.Status(context.Background()); st.Available {
 		t.Error("wrong token must not report available")
 	}
-	if _, err := r.Run(context.Background(), Request{Kind: KindRun}); !errors.Is(err, ErrUnavailable) {
+	_, err := r.Run(context.Background(), Request{Kind: KindRun})
+	if !errors.Is(err, ErrUnavailable) {
 		t.Errorf("want ErrUnavailable, got %v", err)
+	}
+	// These strings reach anonymous users (via /api/config and API errors), so
+	// they must not reveal that an internal component rejected credentials.
+	for _, leak := range []string{"credential", "401", "Unauthorized", srv.URL, "token"} {
+		if strings.Contains(err.Error(), leak) || strings.Contains(r.Status(context.Background()).Reason, leak) {
+			t.Errorf("user-visible runner message leaks %q: %v / %q", leak, err, r.Status(context.Background()).Reason)
+		}
 	}
 }
 
