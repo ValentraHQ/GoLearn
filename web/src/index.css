@@ -1,0 +1,312 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens. Light is the default; .dark on <html> switches the palette. */
+:root {
+  --bg: #ffffff;
+  --bg-subtle: #f6f8fa;
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --border: #d0d7de;
+  --border-strong: #afb8c1;
+  --fg: #1f2328;
+  --fg-muted: #59636e;
+  --fg-faint: #818b98;
+  --accent: #007d9c;
+  --accent-strong: #006680;
+  --accent-soft: #e0f4f9;
+  --accent-fg: #ffffff;
+  --success: #1a7f37;
+  --success-soft: #dafbe1;
+  --warn: #9a6700;
+  --warn-soft: #fff8c5;
+  --danger: #cf222e;
+  --danger-soft: #ffebe9;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --code-border: #d0d7de;
+  --code-gutter: #818b98;
+  --code-selection: #b6e3ff;
+  --hl-keyword: #cf222e;
+  --hl-string: #0a3069;
+  --hl-number: #0550ae;
+  --hl-comment: #6e7781;
+  --hl-func: #8250df;
+  --hl-type: #953800;
+  --shadow: 0 1px 2px rgb(31 35 40 / 0.06), 0 4px 12px rgb(31 35 40 / 0.05);
+}
+
+.dark {
+  --bg: #0d1117;
+  --bg-subtle: #010409;
+  --surface: #151b23;
+  --surface-2: #1c2330;
+  --border: #30363d;
+  --border-strong: #484f58;
+  --fg: #e6edf3;
+  --fg-muted: #9198a1;
+  --fg-faint: #6e7681;
+  --accent: #39c5e8;
+  --accent-strong: #79d8f2;
+  --accent-soft: #0f2a33;
+  --accent-fg: #04131a;
+  --success: #3fb950;
+  --success-soft: #0f2a18;
+  --warn: #d29922;
+  --warn-soft: #2d230a;
+  --danger: #f85149;
+  --danger-soft: #34110f;
+  --code-bg: #0b0f14;
+  --code-fg: #e6edf3;
+  --code-border: #30363d;
+  --code-gutter: #6e7681;
+  --code-selection: #1f4a5a;
+  --hl-keyword: #ff7b72;
+  --hl-string: #a5d6ff;
+  --hl-number: #79c0ff;
+  --hl-comment: #8b949e;
+  --hl-func: #d2a8ff;
+  --hl-type: #ffa657;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 18px rgb(0 0 0 / 0.35);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-faint: var(--fg-faint);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-code-bg: var(--code-bg);
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --shadow-card: var(--shadow);
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--code-selection);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---- lesson prose ---- */
+.prose-go {
+  color: var(--fg);
+  line-height: 1.7;
+  font-size: 0.975rem;
+}
+.prose-go > * + * {
+  margin-top: 0.9rem;
+}
+.prose-go h2 {
+  font-size: 1.25rem;
+  font-weight: 650;
+  margin-top: 1.8rem;
+}
+.prose-go h3 {
+  font-size: 1.05rem;
+  font-weight: 650;
+  margin-top: 1.4rem;
+}
+.prose-go a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-go ul {
+  list-style: disc;
+  padding-left: 1.4rem;
+}
+.prose-go ol {
+  list-style: decimal;
+  padding-left: 1.4rem;
+}
+.prose-go li + li {
+  margin-top: 0.3rem;
+}
+.prose-go code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 0.1em 0.38em;
+  border-radius: 5px;
+}
+.prose-go pre {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  line-height: 1.6;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border: 1px solid var(--code-border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+}
+.prose-go table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  display: block;
+  overflow-x: auto;
+}
+.prose-go th,
+.prose-go td {
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+.prose-go th {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+.prose-go blockquote {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 0.6rem 0.9rem;
+  border-radius: 0 8px 8px 0;
+}
+.prose-go blockquote > * + * {
+  margin-top: 0.4rem;
+}
+.prose-go .callout-warning {
+  border-left-color: var(--warn);
+  background: var(--warn-soft);
+}
+.prose-go .callout-danger {
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
+}
+.prose-go .callout-tip {
+  border-left-color: var(--success);
+  background: var(--success-soft);
+}
+.prose-go .diagram {
+  line-height: 1.35;
+  white-space: pre;
+}
+
+/* highlight.js tokens mapped to the palette */
+.hljs-keyword,
+.hljs-built_in,
+.hljs-literal {
+  color: var(--hl-keyword);
+}
+.hljs-string,
+.hljs-regexp {
+  color: var(--hl-string);
+}
+.hljs-number,
+.hljs-attr,
+.hljs-symbol {
+  color: var(--hl-number);
+}
+.hljs-comment,
+.hljs-meta {
+  color: var(--hl-comment);
+  font-style: italic;
+}
+.hljs-title,
+.hljs-function {
+  color: var(--hl-func);
+}
+.hljs-type,
+.hljs-class,
+.hljs-variable {
+  color: var(--hl-type);
+}
+
+/* CodeMirror */
+.cm-editor {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--code-border);
+}
+.cm-editor.cm-focused {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.cm-gutters {
+  background: transparent !important;
+  color: var(--code-gutter) !important;
+  border: none !important;
+}
+.cm-activeLine,
+.cm-activeLineGutter {
+  background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
+}
+.cm-selectionBackground,
+.cm-editor.cm-focused .cm-selectionBackground {
+  background: var(--code-selection) !important;
+}
+.cm-cursor {
+  border-left-color: var(--accent) !important;
+}
+.cm-scroller {
+  line-height: 1.6;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 37%, var(--surface-2) 63%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+}

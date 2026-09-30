@@ -140,7 +140,7 @@ func splitFences(body string) (prose string, fences []fence) {
 }
 
 func splitList(s string, sep string) []string {
-	var out []string
+	out := []string{}
 	for _, p := range strings.Split(s, sep) {
 		if p = strings.TrimSpace(p); p != "" {
 			out = append(out, p)
@@ -151,7 +151,7 @@ func splitList(s string, sep string) []string {
 
 // bullets returns "- x" list items (multi-line items are joined).
 func bullets(body string) []string {
-	var out []string
+	out := []string{}
 	for _, line := range strings.Split(body, "\n") {
 		t := strings.TrimSpace(line)
 		switch {
