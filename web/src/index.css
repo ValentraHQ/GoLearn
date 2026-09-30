@@ -120,6 +120,12 @@ body {
   border-radius: 4px;
 }
 
+/* <main> is focused programmatically after navigation (for screen readers); it isn't interactive. */
+main:focus,
+main:focus-visible {
+  outline: none;
+}
+
 ::selection {
   background: var(--code-selection);
 }

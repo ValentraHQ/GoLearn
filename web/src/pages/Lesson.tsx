@@ -143,13 +143,13 @@ function LessonView({ d }: { d: LessonDetail }) {
 
           <nav aria-label="Lesson navigation" className="flex items-stretch justify-between gap-3 border-t border-border pt-6">
             {d.prev ? (
-              <Link to={`/learn/${d.prev.module}/${d.prev.slug}`} className="flex flex-1 items-center gap-2 rounded-lg border border-border p-3 text-sm hover:border-accent">
+              <Link to={`/learn/${d.prev.module}/${d.prev.slug}`} className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border p-3 text-sm hover:border-accent">
                 <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
                 <span className="min-w-0"><span className="block text-xs text-faint">Previous</span><span className="block truncate">{d.prev.title}</span></span>
               </Link>
             ) : <span className="flex-1" />}
             {d.next ? (
-              <Link to={`/learn/${d.next.module}/${d.next.slug}`} className="flex flex-1 items-center justify-end gap-2 rounded-lg border border-border p-3 text-right text-sm hover:border-accent">
+              <Link to={`/learn/${d.next.module}/${d.next.slug}`} className="flex min-w-0 flex-1 items-center justify-end gap-2 rounded-lg border border-border p-3 text-right text-sm hover:border-accent">
                 <span className="min-w-0"><span className="block text-xs text-faint">Next lesson</span><span className="block truncate">{d.next.title}</span></span>
                 <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
               </Link>
@@ -167,7 +167,9 @@ function LessonView({ d }: { d: LessonDetail }) {
       </aside>
 
       <Sheet open={curriculumOpen} onOpenChange={setCurriculumOpen} title="Curriculum">
-        <CurriculumNav d={d} onNavigate={() => setCurriculumOpen(false)} />
+        <div className="p-3">
+          <CurriculumNav d={d} onNavigate={() => setCurriculumOpen(false)} />
+        </div>
       </Sheet>
       <Sheet open={progressOpen} onOpenChange={setProgressOpen} title="Progress" side="right">
         <div className="space-y-4 p-4"><ProgressPanel d={d} /></div>

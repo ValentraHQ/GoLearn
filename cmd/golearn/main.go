@@ -45,11 +45,14 @@ func run() error {
 	defer st.Close()
 
 	var rn runner.Runner = runner.Disabled{}
-	if cfg.Runner == "docker" {
+	switch cfg.Runner {
+	case "docker":
 		rn = runner.NewDocker(runner.DockerConfig{
 			Bin: cfg.DockerBin, Image: cfg.RunnerImage, MemoryMB: cfg.RunMemoryMB, CPUs: cfg.RunCPUs,
-			PIDs: cfg.RunPIDs, Concurrency: cfg.RunConcurrent,
+			PIDs: cfg.RunPIDs, Concurrency: cfg.RunConcurrent, Runtime: cfg.DockerRuntime,
 		})
+	case "remote":
+		rn = runner.NewRemote(cfg.RunnerURL, cfg.RunnerToken)
 	}
 	if s := rn.Status(ctx); s.Available {
 		slog.Info("code runner ready", "backend", s.Backend)

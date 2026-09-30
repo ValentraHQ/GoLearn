@@ -91,7 +91,7 @@ function ThemeToggle() {
 
 function StreakChip() {
   const { user } = useAuth();
-  const q = useDashboard();
+  const q = useDashboard(!!user);
   if (!user || !q.data) return null;
   const s = q.data.summary;
   return (
@@ -111,7 +111,7 @@ function UserMenu() {
         <LinkButton to="/login" variant="ghost" size="sm">
           Sign in
         </LinkButton>
-        <LinkButton to="/register" variant="primary" size="sm">
+        <LinkButton to="/register" variant="primary" size="sm" className="max-sm:hidden">
           Get started
         </LinkButton>
       </div>
@@ -188,18 +188,18 @@ export function AppShell({ children, wide }: { children?: ReactNode; wide?: bool
           <Logo className="lg:hidden" />
           <button
             onClick={() => setSearch(true)}
-            className="ml-auto flex h-9 w-full max-w-md items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm text-muted hover:border-border-strong lg:ml-0"
+            className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-border bg-surface text-sm text-muted hover:border-border-strong sm:w-full sm:max-w-md sm:shrink sm:justify-start sm:px-3 lg:ml-0"
             aria-label="Search lessons, challenges, projects and glossary"
             aria-keyshortcuts="Control+K Meta+K"
           >
-            <Search className="h-4 w-4" aria-hidden />
+            <Search className="h-4 w-4 shrink-0" aria-hidden />
             <span className="hidden flex-1 text-left sm:inline">Search…</span>
             <span className="ml-auto hidden items-center gap-1 sm:flex">
               <Kbd>{modKey()}</Kbd>
               <Kbd>K</Kbd>
             </span>
           </button>
-          <div className="ml-auto flex items-center gap-1 lg:ml-auto">
+          <div className="flex shrink-0 items-center gap-1 sm:ml-auto">
             <StreakChip />
             <ThemeToggle />
             <UserMenu />

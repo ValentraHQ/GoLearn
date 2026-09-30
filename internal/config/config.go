@@ -20,7 +20,10 @@ type Config struct {
 	BcryptCost   int
 
 	// Code execution sandbox.
-	Runner        string // "docker" or "disabled"
+	Runner        string // "docker", "remote" or "disabled"
+	RunnerURL     string // remote runner daemon base URL
+	RunnerToken   string // bearer token shared with the runner daemon
+	DockerRuntime string // optional OCI runtime, e.g. "runsc" (gVisor)
 	DockerBin     string
 	RunnerImage   string
 	RunTimeout    time.Duration
@@ -43,17 +46,26 @@ func Load() (Config, error) {
 		TrustProxy:    envBool("GOLEARN_TRUST_PROXY", false),
 		BcryptCost:    envInt("GOLEARN_BCRYPT_COST", 12),
 		Runner:        env("GOLEARN_RUNNER", "docker"),
+		RunnerURL:     env("GOLEARN_RUNNER_URL", ""),
+		RunnerToken:   env("GOLEARN_RUNNER_TOKEN", ""),
+		DockerRuntime: env("GOLEARN_DOCKER_RUNTIME", ""),
 		DockerBin:     env("GOLEARN_DOCKER_BIN", "docker"),
 		RunnerImage:   env("GOLEARN_RUNNER_IMAGE", "golearn-runner:latest"),
 		RunTimeout:    envDur("GOLEARN_RUN_TIMEOUT", 15*time.Second),
-		RunMemoryMB:   envInt("GOLEARN_RUN_MEMORY_MB", 256),
+		RunMemoryMB:   envInt("GOLEARN_RUN_MEMORY_MB", 512),
 		RunCPUs:       env("GOLEARN_RUN_CPUS", "1"),
 		RunPIDs:       envInt("GOLEARN_RUN_PIDS", 256),
 		RunConcurrent: envInt("GOLEARN_RUN_CONCURRENCY", 4),
 		RunsPerMinute: envInt("GOLEARN_RUNS_PER_MINUTE", 30),
 	}
-	if c.Runner != "docker" && c.Runner != "disabled" {
-		return c, fmt.Errorf("GOLEARN_RUNNER must be docker or disabled, got %q", c.Runner)
+	switch c.Runner {
+	case "docker", "disabled":
+	case "remote":
+		if c.RunnerURL == "" || c.RunnerToken == "" {
+			return c, fmt.Errorf("GOLEARN_RUNNER=remote requires GOLEARN_RUNNER_URL and GOLEARN_RUNNER_TOKEN")
+		}
+	default:
+		return c, fmt.Errorf("GOLEARN_RUNNER must be docker, remote or disabled, got %q", c.Runner)
 	}
 	return c, nil
 }

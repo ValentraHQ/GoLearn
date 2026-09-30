@@ -1,0 +1,70 @@
+# Minimal single-node PostgreSQL for development clusters.
+# For production use a managed database or an operator (CloudNativePG, Crunchy, Zalando).
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: golearn
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels: {app: postgres}
+  template:
+    metadata:
+      labels: {app: postgres}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 70
+        fsGroup: 70
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          ports:
+            - {name: pg, containerPort: 5432}
+          env:
+            - {name: POSTGRES_USER, value: golearn}
+            - {name: POSTGRES_DB, value: golearn}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: postgres-secret, key: password}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          readinessProbe:
+            exec: {command: ["pg_isready", "-U", "golearn", "-d", "golearn"]}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: {requests: {storage: 5Gi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: golearn
+spec:
+  clusterIP: None
+  selector: {app: postgres}
+  ports:
+    - {name: pg, port: 5432}
+---
+# Example only — create the real secret out of band.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: golearn
+type: Opaque
+stringData:
+  password: CHANGE-ME

@@ -1,0 +1,74 @@
+# Local development stack.
+#
+#   docker compose --profile sandbox build      # builds the app + runner images
+#   docker compose up -d                        # postgres + api (+ runner daemon)
+#
+# SECURITY NOTE: the runner daemon mounts the host Docker socket, which is
+# root-equivalent on the host. It is only reachable on the internal "sandbox"
+# network with a bearer token, and the internet-facing API has no socket
+# access. For production put the daemon on dedicated, isolated nodes and use a
+# stronger runtime (GOLEARN_DOCKER_RUNTIME=runsc for gVisor, or Kata/Firecracker).
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: golearn
+      POSTGRES_PASSWORD: golearn-dev-password
+      POSTGRES_DB: golearn
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U golearn -d golearn"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://golearn:golearn-dev-password@postgres:5432/golearn?sslmode=disable
+      GOLEARN_RUNNER: remote
+      GOLEARN_RUNNER_URL: http://runner:9090
+      GOLEARN_RUNNER_TOKEN: dev-only-runner-token-change-me
+    ports:
+      - "8080:8080"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [default, sandbox]
+
+  runner:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: runner-daemon
+    environment:
+      GOLEARN_RUNNER_TOKEN: dev-only-runner-token-change-me
+      GOLEARN_RUNNER_IMAGE: golearn-runner:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks: [sandbox]
+    profiles: ["sandbox"]
+
+  # Builds the image the runner starts for each execution (never run as a service).
+  runner-image:
+    image: golearn-runner:latest
+    build:
+      context: .
+      dockerfile: deploy/runner.Dockerfile
+    entrypoint: ["true"]
+    profiles: ["build-only"]
+
+volumes:
+  pgdata:
+
+networks:
+  sandbox:
+    internal: true

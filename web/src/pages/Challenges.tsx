@@ -149,7 +149,7 @@ function ChallengeView({ d }: { d: NonNullable<ReturnType<typeof useChallenge>["
         {c.input && <Section title="Input"><Markdown>{c.input}</Markdown></Section>}
         {c.expectedOutput && <Section title="Expected output"><Markdown>{c.expectedOutput}</Markdown></Section>}
         {c.constraints && c.constraints.length > 0 && (
-          <Section title="Constraints"><ul className="list-disc space-y-1 pl-5 text-sm">{c.constraints.map((x) => <li key={x}>{x}</li>)}</ul></Section>
+          <Section title="Constraints"><Markdown>{c.constraints.map((x) => `- ${x}`).join("\n")}</Markdown></Section>
         )}
         <Section title={`Test cases (${c.testNames.length})`}>
           <ul className="space-y-1 font-mono text-xs text-muted">{c.testNames.map((t) => <li key={t}>{t}</li>)}</ul>

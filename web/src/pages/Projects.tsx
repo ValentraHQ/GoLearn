@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Clock } from "lucide-react";
@@ -62,25 +62,28 @@ export function ProjectPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const toast = useToast();
-  const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Local copy of task state so ticking a box responds instantly; reverted if the save fails.
+  const [local, setLocal] = useState<Record<string, boolean> | null>(null);
+  useEffect(() => setLocal(null), [q.data]);
   useDocumentTitle(q.data?.project.title);
 
   return (
     <Async query={q}>
       {({ project: p, done, module }) => {
-        const count = Object.keys(done).length;
+        const shown = local ?? done;
+        const count = Object.values(shown).filter(Boolean).length;
         const toggle = async (taskId: string, value: boolean) => {
-          setPending(taskId);
+          const previous = shown;
+          setLocal({ ...shown, [taskId]: value });
           setError(null);
           try {
             const r = await send<{ achievements: { title: string }[] }>("PUT", `/api/projects/${p.id}/tasks/${taskId}`, { done: value });
             toast.achievement(r.achievements.map((a) => a.title));
             await qc.invalidateQueries({ predicate: (query) => query.queryKey[0] !== "me" });
           } catch (e) {
+            setLocal(previous);
             setError(e instanceof Error ? e.message : "Couldn't save.");
-          } finally {
-            setPending(null);
           }
         };
         return (
@@ -114,9 +117,9 @@ export function ProjectPage() {
                     {p.tasks.map((t, i) => (
                       <li key={t.id}>
                         <label className="flex cursor-pointer items-start gap-2.5 text-sm">
-                          <input type="checkbox" className="mt-1 accent-[var(--accent)]" checked={!!done[t.id]} disabled={!user || pending === t.id} onChange={(e) => toggle(t.id, e.target.checked)} />
+                          <input type="checkbox" className="mt-1 accent-[var(--accent)]" checked={!!shown[t.id]} disabled={!user} onChange={(e) => toggle(t.id, e.target.checked)} />
                           <span>
-                            <span className={done[t.id] ? "text-muted line-through" : "font-medium"}>{i + 1}. {t.title}</span>
+                            <span className={shown[t.id] ? "text-muted line-through" : "font-medium"}>{i + 1}. {t.title}</span>
                             {t.notes && <span className="mt-0.5 block text-xs text-muted">{t.notes}</span>}
                           </span>
                         </label>

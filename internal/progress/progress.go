@@ -209,7 +209,9 @@ func Compute(cat *content.Catalog, in Input, now time.Time, loc *time.Location) 
 			mp.State = InProgress
 		default:
 			for _, r := range m.Requires {
-				if rp := byID[r]; rp != nil && rp.Total > 0 && pct[r] < PrereqThreshold {
+				// Prerequisites outside the learner's chosen path don't lock anything:
+				// a Professional-path learner never sees the beginner-only setup module.
+				if rp := byID[r]; rp != nil && rp.InPath && rp.Total > 0 && pct[r] < PrereqThreshold {
 					mp.Blockers = append(mp.Blockers, r)
 				}
 			}

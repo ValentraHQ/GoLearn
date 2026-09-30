@@ -25,6 +25,8 @@ type DockerConfig struct {
 	PIDs        int
 	Concurrency int
 	QueueWait   time.Duration
+	// Runtime selects an alternative OCI runtime such as gVisor's runsc.
+	Runtime string
 }
 
 type Docker struct {
@@ -49,7 +51,7 @@ func NewDocker(cfg DockerConfig) *Docker {
 // security boundary of the code runner.
 func (d *Docker) Args(name string) []string {
 	mem := strconv.Itoa(d.cfg.MemoryMB) + "m"
-	return []string{
+	args := []string{
 		"run", "--rm", "-i",
 		"--name", name,
 		"--network", "none",
@@ -65,8 +67,11 @@ func (d *Docker) Args(name string) []string {
 		"--security-opt", "no-new-privileges",
 		"--user", "65534:65534",
 		"--stop-timeout", "1",
-		d.cfg.Image,
 	}
+	if d.cfg.Runtime != "" {
+		args = append(args, "--runtime", d.cfg.Runtime)
+	}
+	return append(args, d.cfg.Image)
 }
 
 func (d *Docker) Status(ctx context.Context) Status {

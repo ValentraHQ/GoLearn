@@ -37,13 +37,19 @@ export function Roadmap() {
         }
       />
       <Async query={q} isEmpty={(d) => d.length === 0} empty={<p className="text-sm text-muted">No modules published yet.</p>}>
-        {(mods) => <Flow modules={mods.filter((m) => path === "all" || m.paths.includes(path))} authed={!!user} />}
+        {(mods) => (
+          <Flow
+            modules={mods.filter((m) => path === "all" || m.paths.includes(path))}
+            authed={!!user}
+            titles={Object.fromEntries(mods.map((m) => [m.id, m.title]))}
+          />
+        )}
       </Async>
     </>
   );
 }
 
-function Flow({ modules, authed }: { modules: ModuleSummary[]; authed: boolean }) {
+function Flow({ modules, authed, titles }: { modules: ModuleSummary[]; authed: boolean; titles: Record<string, string> }) {
   const groups = useMemo(() => {
     const order: string[] = [];
     const by = new Map<string, ModuleSummary[]>();
@@ -103,7 +109,7 @@ function Flow({ modules, authed }: { modules: ModuleSummary[]; authed: boolean }
                         </div>
                         {authed && p && p.totalLessons > 0 && <ProgressBar className="mt-3" value={p.percent} label={`${m.title} progress`} tone={p.percent === 100 ? "success" : "accent"} />}
                         {authed && state === "locked" && p?.blockedBy && (
-                          <p className="mt-2 text-xs text-faint">Recommended first: {p.blockedBy.join(", ")}</p>
+                          <p className="mt-2 text-xs text-faint">Recommended first: {p.blockedBy.map((id) => titles[id] ?? id).join(", ")}</p>
                         )}
                       </div>
                     </div>

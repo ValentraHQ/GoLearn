@@ -71,8 +71,12 @@ export const useSearch = (q: string) =>
     staleTime: STATIC,
   });
 
-export const useDashboard = () =>
-  useQuery({ queryKey: ["dashboard"], queryFn: ({ signal }) => get<{ summary: Summary; profile: Profile }>("/api/dashboard", signal) });
+export const useDashboard = (enabled = true) =>
+  useQuery({
+    queryKey: ["dashboard"],
+    enabled,
+    queryFn: ({ signal }) => get<{ summary: Summary; profile: Profile }>("/api/dashboard", signal),
+  });
 
 export const useSkills = () =>
   useQuery({ queryKey: ["skills"], queryFn: ({ signal }) => get<SkillProgress[]>("/api/skills", signal) });
