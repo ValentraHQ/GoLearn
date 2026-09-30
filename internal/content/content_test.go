@@ -164,6 +164,16 @@ func TestContentRuns(t *testing.T) {
 			return nil
 		}})
 	}
+	// CONTENT_ONLY=<substring> restricts the run to matching snippets while authoring.
+	if only := os.Getenv("CONTENT_ONLY"); only != "" {
+		var keep []job
+		for _, j := range jobs {
+			if strings.Contains(j.name, only) {
+				keep = append(keep, j)
+			}
+		}
+		jobs = keep
+	}
 	sem := make(chan struct{}, 6)
 	var wg sync.WaitGroup
 	for _, j := range jobs {
