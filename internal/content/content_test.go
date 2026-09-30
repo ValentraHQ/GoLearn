@@ -214,8 +214,8 @@ func goRun(files map[string]string, args ...string) (string, error) {
 // define func main() are treated as top-level declarations; others are
 // placed inside main. Common imports are pre-declared and marked used.
 func wrapSnippet(code string) string {
-	const header = "package main\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os\"\n\t\"sort\"\n\t\"strconv\"\n\t\"strings\"\n\t\"sync\"\n\t\"time\"\n\t\"unicode/utf8\"\n)\n\n" +
-		"var (\n\t_ = errors.New\n\t_ = fmt.Sprint\n\t_ = os.Exit\n\t_ = sort.Ints\n\t_ = strconv.Itoa\n\t_ = strings.ToUpper\n\t_ sync.Mutex\n\t_ = time.Now\n\t_ = utf8.RuneLen\n)\n\n"
+	const header = "package main\n\nimport (\n\t\"bufio\"\n\t\"bytes\"\n\t\"context\"\n\t\"encoding/json\"\n\t\"errors\"\n\t\"fmt\"\n\t\"io\"\n\t\"os\"\n\t\"sort\"\n\t\"strconv\"\n\t\"strings\"\n\t\"sync\"\n\t\"time\"\n\t\"unicode/utf8\"\n)\n\n" +
+		"var (\n\t_ = bufio.NewReader\n\t_ = bytes.Equal\n\t_ = context.Background\n\t_ = json.Marshal\n\t_ = errors.New\n\t_ = fmt.Sprint\n\t_ = io.EOF\n\t_ = os.Exit\n\t_ = sort.Ints\n\t_ = strconv.Itoa\n\t_ = strings.ToUpper\n\t_ sync.Mutex\n\t_ = time.Now\n\t_ = utf8.RuneLen\n)\n\n"
 	if strings.Contains(code, "package main") {
 		return code
 	}
