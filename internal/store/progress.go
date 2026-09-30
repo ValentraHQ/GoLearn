@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -82,7 +83,9 @@ type Submission struct {
 }
 
 func (s *Store) AddSubmission(ctx context.Context, userID, challengeID, code string, passed bool, tp, tt int) (Submission, error) {
-	sub := Submission{ID: newID(), ChallengeID: challengeID, Passed: passed, TestsPassed: tp, TestsTotal: tt, CreatedAt: time.Unix(now(), 0)}
+	// Timestamps are stored in whole seconds, so the ID carries a nanosecond
+	// prefix to keep "latest submission" deterministic within the same second.
+	sub := Submission{ID: fmt.Sprintf("%020d-%s", time.Now().UnixNano(), newID()), ChallengeID: challengeID, Passed: passed, TestsPassed: tp, TestsTotal: tt, CreatedAt: time.Unix(now(), 0)}
 	p := 0
 	if passed {
 		p = 1

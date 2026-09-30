@@ -140,6 +140,10 @@ func Middleware(next http.Handler, m *Metrics, allowOrigin string) http.Handler 
 		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		h.Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			// Responses can be per-user; never let a shared cache keep them.
+			h.Set("Cache-Control", "no-store")
+		}
 		if allowOrigin != "" && r.Header.Get("Origin") == allowOrigin {
 			h.Set("Access-Control-Allow-Origin", allowOrigin)
 			h.Set("Access-Control-Allow-Credentials", "true")

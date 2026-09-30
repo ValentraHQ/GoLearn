@@ -430,6 +430,9 @@ func TestSecurityHeadersAndUnknownAPI(t *testing.T) {
 	if resp.StatusCode != 404 || resp.Header.Get("X-Content-Type-Options") != "nosniff" || resp.Header.Get("Content-Security-Policy") == "" {
 		t.Fatalf("status=%d headers=%v", resp.StatusCode, resp.Header)
 	}
+	if resp.Header.Get("Cache-Control") != "no-store" {
+		t.Fatalf("API responses must be no-store, got %q", resp.Header.Get("Cache-Control"))
+	}
 }
 
 // testDatabaseURL returns an in-memory SQLite URL, or — when
