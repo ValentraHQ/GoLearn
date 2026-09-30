@@ -10,6 +10,7 @@ summary: Design small interfaces, use implicit satisfaction, and decouple code f
 
 ## What Are Interfaces?
 slug: what-are-interfaces
+challenges: shapes-total-area
 minutes: 6
 objectives: Define an interface type; Explain that an interface describes behaviour; Use an interface value in a function
 takeaways: An interface is a set of method signatures; Any type with those methods satisfies it; Functions that accept interfaces work with many concrete types
@@ -574,6 +575,7 @@ E: `v` holds a string, so the int assertion fails and the string assertion succe
 
 ## Type Switches
 slug: type-switches
+challenges: describe-any
 minutes: 6
 objectives: Branch on the dynamic type with a type switch; Bind the typed value in each case; Handle default and nil
 takeaways: switch v := x.(type) branches on dynamic type; In each case v has that case's type; Use it for a closed, small set of types — otherwise prefer methods
@@ -769,6 +771,7 @@ E: Explicit constructor injection makes dependencies visible and replaceable in 
 
 ## Interfaces for Testing
 slug: interfaces-for-testing
+challenges: notifier-fake
 minutes: 7
 objectives: Replace real dependencies with fakes; Write a hand-rolled fake; Keep test seams small
 takeaways: Small consumer-defined interfaces make fakes trivial; Hand-written fakes beat heavy mocking frameworks for most cases; Test behaviour, not implementation details

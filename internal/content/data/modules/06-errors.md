@@ -288,6 +288,7 @@ E: `ErrNotFound`, `ErrClosed`… exported vars with an `Err` prefix.
 
 ## Error Wrapping
 slug: error-wrapping
+challenges: parse-age
 minutes: 7
 objectives: Add context with %w; Preserve the original cause; Write useful error messages
 takeaways: fmt.Errorf("context: %w", err) wraps an error; Wrapped errors keep the chain for errors.Is/As; Messages read outer-to-inner: "load config: open x: no such file"
@@ -543,6 +544,7 @@ E: Sentinel values are matched with `errors.Is`; `errors.As` is for extracting t
 
 ## Custom Errors
 slug: custom-errors
+challenges: validation-error
 minutes: 7
 objectives: Implement the error interface on your own type; Carry structured data in errors; Add Unwrap to keep the chain
 takeaways: A custom error is any type with Error() string; Use struct fields to carry machine-readable details; Implement Unwrap() error to expose an underlying cause
@@ -714,6 +716,7 @@ E: Panicking unwinds the stack while executing deferred calls, which is what mak
 
 ## Recover
 slug: recover
+challenges: recover-to-error
 minutes: 7
 objectives: Recover from a panic inside a deferred function; Convert a panic into an error at a boundary; Know what recover cannot do
 takeaways: recover only works inside a deferred function; Use it at boundaries (HTTP handlers, worker goroutines) to keep one failure from crashing everything; Recover returns nil when nothing panicked
@@ -800,6 +803,7 @@ E: Each goroutine must recover its own panics, otherwise the whole program crash
 
 ## Error Handling Best Practices
 slug: error-best-practices
+challenges: retry
 minutes: 7
 objectives: Handle each error once; Add context but don't log-and-return; Design errors callers can act on
 takeaways: Handle an error once — either return it or log it, not both; Wrap with context at meaningful boundaries; Expose sentinel values or types only when callers need to branch on them

@@ -772,6 +772,7 @@ E: `go mod why <module>` prints the import chain that requires it.
 
 ## Version Management
 slug: version-management
+challenges: semver-compare
 minutes: 7
 objectives: Read semantic versions; Explain minimal version selection; Tag releases for your own modules
 takeaways: Semver: MAJOR.MINOR.PATCH — breaking, feature, fix; Go picks the minimum version that satisfies all requirements (MVS); Tag releases with git tags like v1.2.3
@@ -960,6 +961,7 @@ E: If tidy changes anything, the committed files were out of date.
 
 ## Package Design
 slug: package-design
+challenges: functional-options
 minutes: 8
 objectives: Design a small, coherent public API; Apply "accept interfaces, return structs"; Write example-driven documentation
 takeaways: A package should do one thing and its name should say what; Accept interfaces, return concrete types; Document exported names and provide Example functions

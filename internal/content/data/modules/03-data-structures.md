@@ -82,6 +82,7 @@ E: The length is part of an array's type.
 
 ## Slices
 slug: slices
+challenges: largest-number
 minutes: 8
 objectives: Create slices with literals and make; Slice existing slices with s[i:j]; Understand a slice as a view onto an array
 takeaways: A slice is a view (pointer, length, capacity) onto an array; s[i:j] shares memory with s; Prefer slices to arrays in APIs
@@ -381,6 +382,7 @@ E: `a` keeps its own length of 2; `b` is a new slice header of length 3.
 
 ## Copy
 slug: copy
+challenges: rotate-slice
 minutes: 5
 objectives: Copy elements with copy; Avoid aliasing bugs by cloning slices; Use slices.Clone
 takeaways: copy(dst, src) copies min(len(dst), len(src)) elements; Assigning a slice never copies the data; slices.Clone makes an independent copy
@@ -459,6 +461,7 @@ E: Only the slice header is copied; both slices refer to the same backing array.
 
 ## Maps
 slug: maps
+challenges: first-unique-char
 minutes: 7
 objectives: Create maps with literals and make; Read, write and delete keys; Use the comma-ok idiom
 takeaways: A map is an unordered hash table: map[K]V; Reading a missing key yields the zero value; Use v, ok := m[k] to distinguish missing from zero
@@ -536,6 +539,7 @@ E: A missing key yields the zero value and `ok == false`.
 
 ## Map Operations
 slug: map-operations
+challenges: group-anagrams
 minutes: 7
 objectives: Iterate a map and understand random order; Sort keys for deterministic output; Use maps as sets and for grouping
 takeaways: Map iteration order is randomised; Collect and sort keys when you need order; map[T]struct{} is an idiomatic set
@@ -621,6 +625,7 @@ E: `struct{}` occupies no memory, so it makes an efficient set (`map[string]bool
 
 ## Strings
 slug: strings
+challenges: run-length-encode
 minutes: 7
 objectives: Treat strings as immutable byte sequences; Use the strings package for common tasks; Build strings efficiently
 takeaways: Strings are immutable; s[i] is a byte, not a character; Use strings.Builder to concatenate in loops
@@ -774,6 +779,7 @@ E: The conversion copies, because strings are immutable and byte slices are not.
 
 ## Runes
 slug: runes
+challenges: is-palindrome
 minutes: 7
 objectives: Explain what a rune is; Iterate a string by rune with range; Count characters instead of bytes
 takeaways: A rune is a Unicode code point (int32); range over a string decodes runes; Use utf8.RuneCountInString or []rune(s) to count characters

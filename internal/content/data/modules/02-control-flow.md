@@ -168,6 +168,7 @@ E: Return early and keep the success path at the left margin.
 
 ## For Loops
 slug: for-loops
+challenges: fizzbuzz
 minutes: 7
 objectives: Use the three-part for loop; Use for as a while loop; Range over slices, strings and integers
 takeaways: for is Go's only loop keyword; for cond {} replaces while; for i := range n counts from 0 to n-1 (Go 1.22+); range yields index and value
@@ -245,6 +246,7 @@ E: Go has a single loop keyword; `for condition { }` is the while form.
 
 ## Infinite Loops
 slug: infinite-loops
+challenges: collatz-steps
 minutes: 5
 objectives: Write an infinite for loop; Exit loops with break or return; Recognise loops that wait for events
 takeaways: for { } loops forever until break, return, or panic; Servers and workers are usually infinite loops with a clear exit; Always give a long-running loop a way to stop
@@ -320,6 +322,7 @@ E: Many programs (servers, workers, event loops) intentionally loop forever with
 
 ## Break
 slug: break
+challenges: primes-up-to
 minutes: 5
 objectives: Stop a loop early with break; Break out of an outer loop using a label; Know that break also exits switch and select
 takeaways: break exits the innermost for, switch or select; A label lets break exit an outer loop; Prefer extracting a function and returning over labels
@@ -830,6 +833,7 @@ E: An explicit `return 7` assigns 7 to the named result before returning.
 
 ## Multiple Return Values
 slug: multiple-returns
+challenges: min-max
 minutes: 6
 objectives: Return and receive multiple values; Follow the (value, error) convention; Ignore results with the blank identifier
 takeaways: Go functions commonly return (result, error); Use _ to discard a value you don't need; Check the error before using the result
@@ -912,6 +916,7 @@ E: The blank identifier drops a value without naming it.
 
 ## Variadic Functions
 slug: variadic
+challenges: variadic-stats
 minutes: 6
 objectives: Declare variadic parameters with ...; Call with individual values or a slice...; Recognise variadics in the standard library
 takeaways: The last parameter can be ...T and arrives as a []T; Pass an existing slice with xs...; fmt.Println and append are variadic
@@ -1000,6 +1005,7 @@ E: A variadic parameter is received as a slice.
 
 ## Anonymous Functions
 slug: anonymous-functions
+challenges: make-counter
 minutes: 7
 objectives: Define and call function literals; Capture variables in closures; Use closures for counters and callbacks
 takeaways: A function literal has no name and can be called immediately; Closures capture variables, not values; Closures are how Go does callbacks and generators

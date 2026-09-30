@@ -336,6 +336,7 @@ E: `p.Home.City` accesses the `City` field of `Home`.
 
 ## Methods
 slug: methods
+challenges: bank-account
 minutes: 6
 objectives: Attach methods to types with receivers; Call methods with dot syntax; Add methods to non-struct types
 takeaways: A method is a function with a receiver; Methods can be defined on any named type in the same package; Methods make types self-describing
@@ -480,6 +481,7 @@ E: Copying a few words is cheap and gives value semantics.
 
 ## Pointer Receivers
 slug: pointer-receivers
+challenges: stack
 minutes: 6
 objectives: Use pointer receivers to modify state; Choose between pointer and value receivers; Keep receiver kinds consistent per type
 takeaways: A pointer receiver can modify the original; Use pointer receivers for mutation and for large structs; Don't mix pointer and value receivers on one type
@@ -712,6 +714,7 @@ E: Maps may move entries when they grow, so their elements are not addressable.
 
 ## Dereferencing
 slug: dereferencing
+challenges: reverse-linked-list
 minutes: 5
 objectives: Read and write through pointers; Use automatic dereferencing for struct fields; Guard against nil pointers
 takeaways: *p reads or writes the pointed-to value; p.Field is shorthand for (*p).Field; Check for nil before dereferencing when nil is a possible value
@@ -805,6 +808,7 @@ E: `nil` marks the end of a linked list.
 
 ## Struct Composition
 slug: struct-composition
+challenges: employee-payroll
 minutes: 7
 objectives: Embed one struct in another; Use promoted fields and methods; Explain composition over inheritance
 takeaways: Embedding promotes the inner type's fields and methods; Go has no inheritance — composition is the tool; The outer type can override a promoted method
