@@ -1,0 +1,10 @@
+# build output
+/bin/
+/web/dist/
+/web/node_modules/
+*.db
+*.db-shm
+*.db-wal
+.env
+.DS_Store
+coverage.out
