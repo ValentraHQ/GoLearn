@@ -4,6 +4,7 @@ package api
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -58,19 +59,29 @@ func (s *Server) Handler() http.Handler {
 		return httpx.Handler(func(w http.ResponseWriter, r *http.Request) error {
 			u, err := s.authn.Authenticate(r)
 			if err != nil {
-				return httpx.ErrUnauthorized
+				return authError(err)
 			}
 			return f(w, r, u)
 		})
 	}
-	optional := func(f func(w http.ResponseWriter, r *http.Request, u *store.User) error) http.Handler {
+	// optional serves public content, personalised when a valid session exists.
+	// If the session backend fails the request degrades to anonymous, except
+	// where strict is set (e.g. /api/auth/me, which must not claim "signed out").
+	optionalWith := func(strict bool, f func(w http.ResponseWriter, r *http.Request, u *store.User) error) http.Handler {
 		return httpx.Handler(func(w http.ResponseWriter, r *http.Request) error {
 			var up *store.User
-			if u, err := s.authn.Authenticate(r); err == nil {
+			u, err := s.authn.Authenticate(r)
+			switch {
+			case err == nil:
 				up = &u
+			case strict && !errors.Is(err, auth.ErrNoSession):
+				return authError(err)
 			}
 			return f(w, r, up)
 		})
+	}
+	optional := func(f func(w http.ResponseWriter, r *http.Request, u *store.User) error) http.Handler {
+		return optionalWith(false, f)
 	}
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
@@ -90,7 +101,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/auth/register", h(s.register))
 	mux.Handle("POST /api/auth/login", h(s.login))
 	mux.Handle("POST /api/auth/logout", h(s.logout))
-	mux.Handle("GET /api/auth/me", optional(s.me))
+	mux.Handle("GET /api/auth/me", optionalWith(true, s.me))
 	mux.Handle("POST /api/auth/password", authed(s.changePassword))
 	mux.Handle("DELETE /api/account", authed(s.deleteAccount))
 	mux.Handle("GET /api/profile", authed(s.getProfile))
@@ -215,3 +226,14 @@ func (s *Server) lessonOr404(r *http.Request) (*content.Lesson, error) {
 }
 
 func isNotFound(err error) bool { return errors.Is(err, store.ErrNotFound) }
+
+// authError maps an authentication failure to an API error: a missing or
+// expired session is a 401, anything else (database down) is a 503 so clients
+// keep the user signed in and retry.
+func authError(err error) error {
+	if errors.Is(err, auth.ErrNoSession) {
+		return httpx.ErrUnauthorized
+	}
+	slog.Error("authentication backend failure", "err", err)
+	return httpx.Err(http.StatusServiceUnavailable, "unavailable", "The service is temporarily unavailable. Please try again.")
+}

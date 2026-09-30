@@ -2,14 +2,19 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
 	"errors"
+	"os"
+	"strings"
 	"testing"
 	"time"
 )
 
 func open(t *testing.T) *Store {
 	t.Helper()
-	s, err := Open(context.Background(), "sqlite::memory:")
+	s, err := Open(context.Background(), testDatabaseURL(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,4 +208,34 @@ func TestDeleteUserCascades(t *testing.T) {
 	if _, err := s.UserBySession(ctx, tok); !errors.Is(err, ErrNotFound) {
 		t.Errorf("session survived user deletion: %v", err)
 	}
+}
+
+// testDatabaseURL returns an in-memory SQLite URL, or — when
+// GOLEARN_TEST_DATABASE_URL points at PostgreSQL — a URL bound to a fresh,
+// uniquely named schema that is dropped when the test ends.
+func testDatabaseURL(t *testing.T) string {
+	t.Helper()
+	base := os.Getenv("GOLEARN_TEST_DATABASE_URL")
+	if base == "" {
+		return "sqlite::memory:"
+	}
+	b := make([]byte, 6)
+	_, _ = rand.Read(b)
+	schema := "t_" + hex.EncodeToString(b)
+	admin, err := sql.Open("pgx", base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := admin.Exec("CREATE SCHEMA " + schema); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = admin.Exec("DROP SCHEMA " + schema + " CASCADE")
+		admin.Close()
+	})
+	sep := "?"
+	if strings.Contains(base, "?") {
+		sep = "&"
+	}
+	return base + sep + "search_path=" + schema
 }

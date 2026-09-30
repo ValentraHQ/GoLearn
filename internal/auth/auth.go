@@ -32,10 +32,18 @@ type Authenticator interface {
 type Chain []Authenticator
 
 func (c Chain) Authenticate(r *http.Request) (store.User, error) {
+	var hard error
 	for _, a := range c {
-		if u, err := a.Authenticate(r); err == nil {
+		u, err := a.Authenticate(r)
+		if err == nil {
 			return u, nil
 		}
+		if hard == nil && !errors.Is(err, ErrNoSession) {
+			hard = err // e.g. database failure: report it instead of "signed out"
+		}
+	}
+	if hard != nil {
+		return store.User{}, hard
 	}
 	return store.User{}, ErrNoSession
 }
@@ -143,8 +151,12 @@ func (a SessionAuthenticator) Authenticate(r *http.Request) (store.User, error) 
 		return store.User{}, ErrNoSession
 	}
 	u, err := a.Store.UserBySession(r.Context(), c.Value)
-	if err != nil {
+	if errors.Is(err, store.ErrNotFound) {
 		return store.User{}, ErrNoSession
+	}
+	if err != nil {
+		// A database failure is not "signed out": callers must not log users out.
+		return store.User{}, err
 	}
 	return u, nil
 }

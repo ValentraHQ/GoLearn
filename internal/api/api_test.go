@@ -3,11 +3,15 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -61,6 +65,7 @@ type env struct {
 	srv    *httptest.Server
 	runner *fakeRunner
 	client *http.Client
+	store  *store.Store
 }
 
 func newEnv(t *testing.T) *env {
@@ -70,7 +75,7 @@ func newEnv(t *testing.T) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st, err := store.Open(context.Background(), "sqlite::memory:")
+	st, err := store.Open(context.Background(), testDatabaseURL(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +85,7 @@ func newEnv(t *testing.T) *env {
 	srv := httptest.NewServer(api.New(cfg, st, cat, fr).Handler())
 	t.Cleanup(srv.Close)
 	jar := newJar()
-	return &env{t: t, srv: srv, runner: fr, client: &http.Client{Jar: jar}}
+	return &env{t: t, srv: srv, runner: fr, client: &http.Client{Jar: jar}, store: st}
 }
 
 func (e *env) do(method, path string, body any, csrf bool) (int, map[string]any) {
@@ -424,5 +429,58 @@ func TestSecurityHeadersAndUnknownAPI(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != 404 || resp.Header.Get("X-Content-Type-Options") != "nosniff" || resp.Header.Get("Content-Security-Policy") == "" {
 		t.Fatalf("status=%d headers=%v", resp.StatusCode, resp.Header)
+	}
+}
+
+// testDatabaseURL returns an in-memory SQLite URL, or — when
+// GOLEARN_TEST_DATABASE_URL points at PostgreSQL — a URL bound to a fresh,
+// uniquely named schema that is dropped when the test ends.
+func testDatabaseURL(t *testing.T) string {
+	t.Helper()
+	base := os.Getenv("GOLEARN_TEST_DATABASE_URL")
+	if base == "" {
+		return "sqlite::memory:"
+	}
+	b := make([]byte, 6)
+	_, _ = rand.Read(b)
+	schema := "t_" + hex.EncodeToString(b)
+	admin, err := sql.Open("pgx", base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := admin.Exec("CREATE SCHEMA " + schema); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = admin.Exec("DROP SCHEMA " + schema + " CASCADE")
+		admin.Close()
+	})
+	sep := "?"
+	if strings.Contains(base, "?") {
+		sep = "&"
+	}
+	return base + sep + "search_path=" + schema
+}
+
+// A database failure must not look like "signed out": clients would drop the
+// session and send users to the login page during a transient outage.
+func TestDatabaseOutageIsNotSignedOut(t *testing.T) {
+	e := newEnv(t)
+	if st, _ := e.do("POST", "/api/auth/register", map[string]any{"email": "outage@example.com", "password": "correct horse battery", "displayName": "O"}, true); st != 201 {
+		t.Fatalf("register: %d", st)
+	}
+	if st, _ := e.do("GET", "/api/dashboard", nil, true); st != 200 {
+		t.Fatalf("dashboard while healthy: %d", st)
+	}
+	_ = e.store.Close() // simulate the database going away
+
+	if st, body := e.do("GET", "/api/dashboard", nil, true); st != http.StatusServiceUnavailable {
+		t.Fatalf("dashboard during outage: want 503, got %d %v", st, body)
+	}
+	if st, _ := e.do("GET", "/api/auth/me", nil, true); st != http.StatusServiceUnavailable {
+		t.Fatalf("/api/auth/me during outage: want 503, got %d", st)
+	}
+	if st, _ := e.do("GET", "/api/modules", nil, true); st != 200 {
+		t.Fatalf("public curriculum should stay up during an outage, got %d", st)
 	}
 }
