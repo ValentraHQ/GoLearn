@@ -29,6 +29,7 @@ services:
       context: .
       dockerfile: deploy/Dockerfile
       target: api
+    image: golearn-api:latest
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,6 +50,9 @@ services:
       context: .
       dockerfile: deploy/Dockerfile
       target: runner-daemon
+    # Explicit name: the default (<project>-runner = golearn-runner) is the tag of
+    # the sandbox image below, and building this service would overwrite it.
+    image: golearn-runner-daemon:latest
     environment:
       GOLEARN_RUNNER_TOKEN: dev-only-runner-token-change-me
       GOLEARN_RUNNER_IMAGE: golearn-runner:latest

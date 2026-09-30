@@ -31,6 +31,7 @@ var fileRe = runner.FileNameRe
 
 func main() {
 	res := handle()
+	res.Protocol = runner.ProtocolVersion
 	_ = json.NewEncoder(os.Stdout).Encode(res)
 }
 

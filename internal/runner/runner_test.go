@@ -175,3 +175,19 @@ func TestRequestValidate(t *testing.T) {
 		}
 	}
 }
+
+// A wrong image can print valid JSON that is not a sandbox result (for example
+// a log line). That must be an error, never an "empty successful run".
+func TestWrongImageOutputIsRejected(t *testing.T) {
+	dir := t.TempDir()
+	shim := filepath.Join(dir, "docker")
+	script := "#!/bin/sh\ncase \"$1\" in\n  image) exit 0;;\n  rm) exit 0;;\n  run) cat >/dev/null; echo '{\"time\":\"t\",\"level\":\"ERROR\",\"msg\":\"not a sandbox\"}'; exit 1;;\nesac\n"
+	if err := os.WriteFile(shim, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	d := NewDocker(DockerConfig{Bin: shim, Image: "img", MemoryMB: 64, CPUs: "1", PIDs: 8, Concurrency: 1})
+	res, err := d.Run(context.Background(), Request{Kind: KindRun, TimeoutSec: 5, Files: map[string]string{"main.go": "package main"}})
+	if err == nil {
+		t.Fatalf("expected an error, got a result: %+v", res)
+	}
+}

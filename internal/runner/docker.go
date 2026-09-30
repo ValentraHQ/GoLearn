@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
@@ -156,6 +157,9 @@ func (d *Docker) Run(ctx context.Context, req Request) (Result, error) {
 			return Result{}, fmt.Errorf("runner failed: %w", runErr)
 		}
 		return Result{}, fmt.Errorf("runner returned malformed output: %w", err)
+	}
+	if res.Protocol != ProtocolVersion {
+		return Result{}, errors.New("runner image produced unexpected output (wrong or outdated image?)")
 	}
 	res.DurationMS = time.Since(start).Milliseconds()
 	return res, nil

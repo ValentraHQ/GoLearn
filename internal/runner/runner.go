@@ -38,7 +38,13 @@ type TestResult struct {
 	Output string `json:"output,omitempty"`
 }
 
+// ProtocolVersion marks output produced by sandbox-entrypoint. The driver
+// rejects anything without it, so a wrong or broken image (whose output could
+// still be valid JSON) can never be mistaken for a successful empty run.
+const ProtocolVersion = 1
+
 type Result struct {
+	Protocol    int    `json:"protocol"`
 	Stdout      string `json:"stdout"`
 	Stderr      string `json:"stderr"`
 	ExitCode    int    `json:"exitCode"`
