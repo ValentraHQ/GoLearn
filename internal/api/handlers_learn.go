@@ -351,20 +351,25 @@ func (s *Server) submitChallenge(w http.ResponseWriter, r *http.Request, u store
 	}
 	tests := make([]testOut, 0, len(ch.TestNames))
 	passedN := 0
+	// Pass/fail comes only from the authenticated verdict the sandbox
+	// entrypoint produced. Events parsed from stdout are untrusted (learner code
+	// can print anything) and are used only to explain failures.
 	for _, name := range ch.TestNames {
 		t, ok := byName[name]
-		to := testOut{Name: name, Passed: ok && t.Passed}
-		if !to.Passed {
-			to.Message = clip(t.Output, 800)
-			if !ok {
-				to.Message = "Test did not run."
-			}
-		} else {
+		to := testOut{Name: name, Passed: res.Verdict.Passed(name)}
+		switch {
+		case to.Passed:
 			passedN++
+		case ok && t.Passed:
+			to.Message = "This result could not be verified."
+		case ok:
+			to.Message = clip(t.Output, 800)
+		default:
+			to.Message = "Test did not run."
 		}
 		tests = append(tests, to)
 	}
-	passed := passedN == len(ch.TestNames) && res.ExitCode == 0 && !res.TimedOut && !res.BuildFailed
+	passed := res.Verdict.AllPassed(ch.TestNames) && res.ExitCode == 0 && !res.TimedOut && !res.BuildFailed
 	sub, err := s.store.AddSubmission(r.Context(), u.ID, ch.ID, code, passed, passedN, len(ch.TestNames))
 	if err != nil {
 		return err

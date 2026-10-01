@@ -79,9 +79,7 @@ func handle() runner.Result {
 		}
 		return execute(exec.Command(filepath.Join(work, "prog")), work, env, timeout)
 	case runner.KindTest:
-		cmd := exec.Command("go", "test", "-json", "-count=1", "-timeout", strconv.Itoa(int(timeout.Seconds()))+"s", ".")
-		res := execute(cmd, work, env, buildLimit+timeout)
-		return res
+		return gradeTests(work, env, timeout)
 	}
 	return fail("unknown kind")
 }
@@ -170,4 +168,38 @@ func copyTree(src, dst string) error {
 		_, err = io.Copy(out, in)
 		return err
 	})
+}
+
+// gradeTests runs the platform's tests with a trusted verdict channel (see
+// runner/grader.go). Every *_test.go in the request is instrumented; the
+// learner's own files never are.
+func gradeTests(work string, env []string, timeout time.Duration) runner.Result {
+	g, err := runner.NewGrader(work)
+	if err != nil {
+		return fail("grader setup failed")
+	}
+	tests, err := filepath.Glob(filepath.Join(work, "*_test.go"))
+	if err != nil || len(tests) != 1 {
+		return fail("expected exactly one test file")
+	}
+	src, err := os.ReadFile(tests[0])
+	if err != nil {
+		return fail(err.Error())
+	}
+	instrumented, graderFile, err := g.Instrument(string(src))
+	if err != nil {
+		return fail("cannot grade: " + err.Error())
+	}
+	if err := os.WriteFile(tests[0], []byte(instrumented), 0o644); err != nil {
+		return fail(err.Error())
+	}
+	if err := os.WriteFile(filepath.Join(work, "zz_grader_test.go"), []byte(graderFile), 0o644); err != nil {
+		return fail(err.Error())
+	}
+	_ = os.Remove(g.VerdictPath)
+	cmd := exec.Command("go", "test", "-json", "-count=1", "-timeout", strconv.Itoa(int(timeout.Seconds()))+"s", ".")
+	res := execute(cmd, work, env, buildLimit+timeout)
+	res.Verdict = g.ReadVerdict()
+	_ = os.Remove(g.VerdictPath)
+	return res
 }

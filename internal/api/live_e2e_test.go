@@ -213,6 +213,17 @@ func TestLiveE2E(t *testing.T) {
 		if st, r := a.do("POST", "/api/challenges/fizzbuzz/submit", map[string]any{"code": ch.Starter}); st != 200 || dig(r, "data", "passed") != false {
 			t.Fatalf("starter should fail fizzbuzz: %d %v", st, r)
 		}
+		// A learner who forges "pass" output and exits 0 must not pass.
+		var forged strings.Builder
+		forged.WriteString("package main\nimport (\"fmt\"; \"os\")\nfunc main() {}\nfunc init() {\n")
+		for _, n := range ch.TestNames {
+			forged.WriteString(fmt.Sprintf("\tfmt.Println(\"=== RUN   %s\\n--- PASS: %s (0.00s)\")\n", n, n))
+		}
+		forged.WriteString("\tfmt.Println(\"PASS\")\n\tos.Exit(0)\n}\n")
+		if st, r := a.do("POST", "/api/challenges/fizzbuzz/submit", map[string]any{"code": forged.String()}); st != 200 || dig(r, "data", "passed") != false {
+			t.Fatalf("forged pass output must not pass: %d %v", st, r)
+		}
+		want(t, "forgery does not count", num(a.summary()["challengesCompleted"]), 0)
 		for i := 0; i < 2; i++ {
 			if st, r := a.do("POST", "/api/challenges/fizzbuzz/submit", map[string]any{"code": ch.Solution}); st != 200 || dig(r, "data", "passed") != true {
 				t.Fatalf("solution should pass fizzbuzz: %d %v", st, r)

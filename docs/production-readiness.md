@@ -9,7 +9,7 @@ Legend used throughout: **Verified** (run and observed here) · **Partially veri
 
 The core learning loop works end to end against the real stack: register → login → dashboard → roadmap → module → lesson → editor → execution in a real Docker sandbox → challenge tests → quiz → completion → progress, skills, achievements, streak. It was exercised three ways: SQLite + local Docker, PostgreSQL 16 + local Docker, and the Compose topology (PostgreSQL 17, distroless API without the Docker socket, runner daemon, per-run sandbox containers).
 
-The pass found and fixed **three high-severity** problems (a Compose image-name collision that silently replaced the sandbox image, a runner that turned any JSON output into a "successful" empty run, and a `go.mod` that allowed a Go toolchain with 21 reachable standard-library vulnerabilities) and several medium/low ones (section 11).
+The pass found and fixed **four high-severity** problems (trivially forgeable challenge grading, a Compose image-name collision that silently replaced the sandbox image, a runner that turned any JSON output into a "successful" empty run, and a `go.mod` that allowed a Go toolchain with 21 reachable standard-library vulnerabilities) and several medium/low ones (section 11).
 
 **This is not a claim that GoLearn is production-ready.** It is a validated, hardened MVP for a controlled launch. The main gaps are: no independent penetration test, no stronger sandbox runtime (gVisor/Kata) tested, no Kubernetes cluster run, CI changes not yet run on GitHub, and load tested only up to 50 concurrent runs on one 4-vCPU host. See sections 13–15.
 
@@ -156,6 +156,7 @@ Host memory rose from ~0.75 GB to ~2.0 GB at 8 containers. CPU was not sampled d
 | Sev | Issue | Status |
 | --- | --- | --- |
 | **P1** | `docker-compose.yml`: the `runner` service's default image name (`golearn-runner`) is the sandbox image tag; building it replaced the sandbox image with the daemon, so executions ran the wrong image | Fixed (explicit image names) |
+| **P1** | Challenge grading trusted `go test -json` output produced inside the learner's process: printing `--- PASS: TestX` lines and calling `os.Exit(0)` from `init()` passed any challenge (reproduced) | Fixed (authenticated verdict, see §12); one residual risk remains (§13) |
 | **P1** | Runner accepted *any* JSON on the container's stdout as a result; a wrong image printing a log line produced a successful, empty run (fail-open) | Fixed (protocol marker required); test fails without the fix |
 | **P1** | `go.mod` allowed Go 1.26.0: `govulncheck` reports 21 reachable stdlib vulnerabilities; 1.26.8 reports 0 | Fixed (`go 1.26.8`; CI runs `govulncheck`) |
 | P2 | Database failure was treated as "not signed in": signed-in users got 401 and `/api/auth/me` returned `null` during an outage | Fixed (503, session kept) |
@@ -181,6 +182,7 @@ Host memory rose from ~0.75 GB to ~2.0 GB at 8 containers. CPU was not sampled d
 | --- | --- |
 | Compose image names | `docker compose config` + full stack run (no unit-testable surface) |
 | Protocol marker | `TestWrongImageOutputIsRejected` |
+| Trusted challenge grading (verdict authenticated with a per-run key; server ignores stdout for pass/fail) | `TestChallengeGradingResistsForgedResults` (real `go test`: 6 forgeries rejected, 3 of which the old grader accepted; honest pass/fail unaffected), `TestInstrumentRejectsTestMainAndEmptyFiles`, `TestVerdictMACIsEnforced`, API forgery cases in `TestChallengeSubmitAndSolutionGate`, a forged submission in `TestLiveE2E` on real Docker, and `grading/<id>` checks that all 67 real challenges accept their solution and reject their starter |
 | Toolchain pin, CI scans | `govulncheck` clean |
 | DB outage ≠ signed out | `TestDatabaseOutageIsNotSignedOut` |
 | Last `X-Forwarded-For` | `TestClientIP` |
@@ -196,7 +198,7 @@ New test infrastructure: `GOLEARN_TEST_DATABASE_URL` (Postgres for the store/API
 ## 13. Known limitations
 
 - A container is not a hard security boundary; a public launch needs gVisor/Kata/Firecracker on dedicated, disposable nodes (`docs/sandbox.md`). Only runc was tested.
-- Challenge grading trusts `go test -json` produced inside the untrusted process (documented; affects only the cheater's own progress).
+- Challenge grading is hardened (authenticated verdict) but learner code and tests share a process, so a learner who extracts the per-run key from their own compiled test binary can still forge a pass. Closing it needs out-of-process (black-box) tests. Exercises check stdout text and are inherently printable (see `docs/sandbox.md`).
 - Capacity is per host and configured by `GOLEARN_RUN_CONCURRENCY`; behaviour beyond 50 concurrent runs or on multiple nodes is unknown.
 - Not implemented: Redis, OIDC login, password reset, admin CMS/analytics, OpenTelemetry tracing in the server. ~78 of 319 roadmap lessons are labelled *coming soon* rather than faked.
 - Intentionally deferred: everything above; code execution is disabled by default in the Kubernetes manifests.

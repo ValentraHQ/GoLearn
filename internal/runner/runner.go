@@ -52,6 +52,9 @@ type Result struct {
 	Truncated   bool   `json:"truncated"`
 	BuildFailed bool   `json:"buildFailed"`
 	DurationMS  int64  `json:"durationMs"`
+	// Verdict is set for KindTest runs. Only an authenticated verdict (see
+	// grader.go) may be used to decide that a challenge passed.
+	Verdict *Verdict `json:"verdict,omitempty"`
 }
 
 type Status struct {

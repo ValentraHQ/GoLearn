@@ -79,7 +79,7 @@ skill: functions
 ### Problem   ### Input (optional)   ### Expected (optional)
 ### Constraints   (bullets)   ### Hints   (bullets)
 ### Starter   ```go``` — compiles, has `func main() {}`, and must FAIL the tests
-### Tests     ```go``` — `package main`, `func TestXxx(t *testing.T)`; hidden from learners until submitted
+### Tests     ```go``` — `package main`, `func TestXxx(t *testing.T)`; hidden from learners until submitted. Do not define `TestMain`: the sandbox rewrites top-level tests and injects its own so results can be authenticated (a file with `TestMain` is rejected). Every name in the challenge's test list must be a top-level test.
 ### Solution  ```go``` — must pass the tests, with the race detector
 ### Explanation
 ```

@@ -315,9 +315,28 @@ func TestChallengeSubmitAndSolutionGate(t *testing.T) {
 	if data(out)["passed"] != false {
 		t.Fatalf("no test events must not pass: %v", out)
 	}
-	e.runner.res = runner.Result{ExitCode: 0, Stdout: `{"Action":"run","Test":"TestAdd"}
+	// Forged results: pass events printed by learner code (stdout) and exit 0,
+	// with no authenticated verdict from the sandbox entrypoint, must never pass.
+	forgedStdout := `{"Action":"run","Test":"TestAdd"}
 {"Action":"pass","Test":"TestAdd"}
-`}
+`
+	for name, res := range map[string]runner.Result{
+		"stdout events only":      {ExitCode: 0, Stdout: forgedStdout},
+		"invalid verdict":         {ExitCode: 0, Stdout: forgedStdout, Verdict: &runner.Verdict{Valid: false, Tests: map[string]bool{"TestAdd": true}}},
+		"verdict without test":    {ExitCode: 0, Stdout: forgedStdout, Verdict: &runner.Verdict{Valid: true, Tests: map[string]bool{}}},
+		"verdict reports failure": {ExitCode: 0, Stdout: forgedStdout, Verdict: &runner.Verdict{Valid: true, ExitCode: 1, Tests: map[string]bool{"TestAdd": true}}},
+		"verdict test failed":     {ExitCode: 0, Stdout: forgedStdout, Verdict: &runner.Verdict{Valid: true, Tests: map[string]bool{"TestAdd": false}}},
+	} {
+		e.runner.res = res
+		_, out = e.call("POST", "/api/challenges/add/submit", map[string]any{"code": "package main\nfunc main(){}"})
+		if data(out)["passed"] != false {
+			t.Fatalf("%s: forged result must not pass: %v", name, out)
+		}
+	}
+	if _, out := e.call("GET", "/api/challenges?status=passed", nil); out["meta"].(map[string]any)["total"].(float64) != 0 {
+		t.Fatalf("forged submissions must not mark the challenge passed: %v", out)
+	}
+	e.runner.res = runner.Result{ExitCode: 0, Stdout: forgedStdout, Verdict: &runner.Verdict{Valid: true, Tests: map[string]bool{"TestAdd": true}}}
 	_, out = e.call("POST", "/api/challenges/add/submit", map[string]any{"code": "package main\nfunc main(){}"})
 	if data(out)["passed"] != true {
 		t.Fatalf("should pass: %v", out)

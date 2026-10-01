@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/valentrahq/golearn/internal/runner"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -173,6 +174,30 @@ func TestContentRuns(t *testing.T) {
 			}
 			return nil
 		}})
+		// The server grades challenges from an authenticated verdict produced by
+		// instrumenting the hidden tests (see runner/grader.go). Check that every
+		// challenge survives that rewrite: the solution is accepted and the
+		// starter is rejected, each with a valid verdict.
+		jobs = append(jobs, job{"grading/" + ch.ID, func() error {
+			v, err := gradedRun(ch.Solution, ch.Tests)
+			if err != nil {
+				return fmt.Errorf("solution: %w", err)
+			}
+			if !v.AllPassed(ch.TestNames) {
+				return fmt.Errorf("solution not accepted by the trusted grader: %+v (expected %v)", v, ch.TestNames)
+			}
+			v, err = gradedRun(ch.Starter, ch.Tests)
+			if err != nil {
+				return fmt.Errorf("starter: %w", err)
+			}
+			if v.AllPassed(ch.TestNames) {
+				return fmt.Errorf("starter must not be accepted: %+v", v)
+			}
+			if !v.Valid {
+				return fmt.Errorf("starter should still produce an authenticated partial or failing verdict (so learners see per-test results): %+v", v)
+			}
+			return nil
+		}})
 	}
 	// CONTENT_ONLY=<substring> restricts the run to matching snippets while authoring.
 	if only := os.Getenv("CONTENT_ONLY"); only != "" {
@@ -243,4 +268,36 @@ func wrapSnippet(code string) string {
 		return header + code
 	}
 	return header + "func main() {\n" + code + "\n}\n"
+}
+
+// gradedRun mirrors the sandbox entrypoint's grading flow on the local toolchain.
+func gradedRun(code, tests string) (*runner.Verdict, error) {
+	dir, err := os.MkdirTemp("", "golearn-grading-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(dir)
+	g, err := runner.NewGrader(dir)
+	if err != nil {
+		return nil, err
+	}
+	instrumented, graderFile, err := g.Instrument(tests)
+	if err != nil {
+		return nil, err
+	}
+	for name, body := range map[string]string{
+		"go.mod": "module sandbox\n\ngo 1.24\n", "main.go": code,
+		"main_test.go": instrumented, "zz_grader_test.go": graderFile,
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
+			return nil, err
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "go", "test", "-count=1", "-timeout", "30s", ".")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod", "GOPROXY=off", "CGO_ENABLED=1")
+	_ = cmd.Run() // a failing run is expected for starters; the verdict decides
+	return g.ReadVerdict(), nil
 }
