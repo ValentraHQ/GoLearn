@@ -55,7 +55,7 @@ per-request sandbox container (destroyed after each run)
 | Runner daemon auth/validation | Verified | curl probes (§5) |
 | Security probes | Partially verified | lightweight, not a penetration test (§9) |
 | Deployment: Compose | Verified | `compose config`, stack brought up, runtime hardening inspected |
-| Deployment: Kubernetes | Partially verified | `kubectl kustomize` renders 13 objects; **not applied to a cluster** |
+| Deployment: Kubernetes | Partially verified | `kubectl kustomize` renders 11 objects with no Secrets; structure and secret references checked; TLS Postgres replicated in Docker; **not applied to a cluster** |
 | CI workflow | Not tested | YAML parses; the new jobs (`postgres`, `govulncheck`, `npm audit`) have not run on GitHub |
 | `deploy/Dockerfile` build stages | Not tested | see §14 |
 | gVisor / Kata | Not tested | flag is passed through and unit-tested only |
@@ -163,7 +163,7 @@ Host memory rose from ~0.75 GB to ~2.0 GB at 8 containers. CPU was not sampled d
 | P2 | Rate limiting used the *first* `X-Forwarded-For` entry, which a client controls when a proxy appends | Fixed (last entry; documented single-proxy assumption) |
 | P2 | "Latest submission" could return the older code when two submissions landed in the same second (existing test was flaky) | Fixed |
 | P2 | Glossary cards overflowed on phones | Fixed |
-| P2 | Kubernetes example Secret ships a `CHANGE-ME` database password and `sslmode=disable` | Open (documented; replace before deploying) |
+| P2 | Kubernetes manifests deployed two Secrets with placeholder passwords (`CHANGE-ME`), and the database URL used `sslmode=disable` (so `kubectl apply -k` would have created a database with a known password and unencrypted connections) | Fixed: no Secrets in the kustomization (deployment fails closed until they are created out of band), `sslmode=require`, bundled Postgres now serves TLS; see §12 |
 | P3 | Killed/OOM runs showed no explanation | Fixed |
 | P3 | Runner daemon started containers for invalid file names | Fixed (validated first) |
 | P3 | API responses were cacheable | Fixed (`Cache-Control: no-store`) |
@@ -180,6 +180,7 @@ Host memory rose from ~0.75 GB to ~2.0 GB at 8 containers. CPU was not sampled d
 
 | Fix | Test |
 | --- | --- |
+| Kubernetes Secrets/TLS: Secrets removed from the kustomization, credentials created out of band (`deploy/k8s/README.md`), `sslmode=require` with TLS enabled on the bundled Postgres, non-working `<placeholder>` example outside the kustomization, `.gitignore` guard | `internal/deploycheck` (7 checks, each verified to fail when its insecure pattern is reintroduced; also runs in CI). Init container + TLS Postgres replicated in Docker under the manifest's constraints (uid 70, read-only root, all capabilities dropped): the API connected over TLSv1.3. Rendered output structure checked (labels/selectors, secret references); `kubectl create secret` commands dry-run |
 | Compose image names | `docker compose config` + full stack run (no unit-testable surface) |
 | Protocol marker | `TestWrongImageOutputIsRejected` |
 | Trusted challenge grading (verdict authenticated with a per-run key; server ignores stdout for pass/fail) | `TestChallengeGradingResistsForgedResults` (real `go test`: 6 forgeries rejected, 3 of which the old grader accepted; honest pass/fail unaffected), `TestInstrumentRejectsTestMainAndEmptyFiles`, `TestVerdictMACIsEnforced`, API forgery cases in `TestChallengeSubmitAndSolutionGate`, a forged submission in `TestLiveE2E` on real Docker, and `grading/<id>` checks that all 67 real challenges accept their solution and reject their starter |
@@ -208,7 +209,7 @@ Curriculum integrity (verified via the API and the content test): 26 modules, 24
 ## 14. Deployment requirements
 
 - Compose: verified. `deploy/Dockerfile`'s *build* stages (`npm ci`, `go mod download`) could not run here because the sandbox network intercepts TLS; the runtime stages were reproduced from locally built binaries (distroless non-root, read-only, all caps dropped, no-new-privileges, healthy). Build the API image in an unrestricted environment (CI does) before relying on it.
-- Kubernetes: manifests render and use restricted Pod Security, non-root, read-only root FS, probes, NetworkPolicies, and `GOLEARN_RUNNER=disabled` by default (verified in the rendered output). Replace the example Secret, use TLS to the database, and treat enabling the runner as a separate hardening project.
+- Kubernetes: manifests render and use restricted Pod Security, non-root, read-only root FS, probes, NetworkPolicies, and `GOLEARN_RUNNER=disabled` by default (verified in the rendered output). Create `golearn-db` and `golearn-secrets` out of band before applying (`deploy/k8s/README.md`; pods stay in `CreateContainerConfigError` until you do). The bundled Postgres is development-only: its TLS uses a throw-away self-signed certificate, so `sslmode=require` encrypts but does not verify the server — use a managed database or operator with a real CA and `sslmode=verify-full` for production. Treat enabling the runner as a separate hardening project.
 - Set `GOLEARN_COOKIE_SECURE=true` behind HTTPS; `GOLEARN_TRUST_PROXY=true` only behind exactly one proxy you control; add HSTS at the proxy.
 - Configuration reference: `.env.example`. Health: `/healthz`, `/readyz` (database ping), `/metrics`.
 - Runner: `GOLEARN_RUNNER_TOKEN` ≥16 random characters, daemon on an isolated network/node, `docker` socket only on the daemon.

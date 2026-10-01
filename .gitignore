@@ -8,3 +8,10 @@
 .env
 .DS_Store
 coverage.out
+
+# Never commit credentials. Real Kubernetes secrets are created out of band
+# (deploy/k8s/README.md); these patterns catch accidental local files.
+*.secret.yaml
+*.secrets.yaml
+deploy/k8s/secrets.yaml
+deploy/k8s/**/secret.yaml

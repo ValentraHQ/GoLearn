@@ -13,13 +13,6 @@ data:
   # To use the remote runner daemon set GOLEARN_RUNNER=remote plus URL and token
   # (see docs/sandbox.md).
   GOLEARN_RUNNER: "disabled"
----
-# Example only — create the real secret out of band (sealed-secrets, external-secrets, ...).
-apiVersion: v1
-kind: Secret
-metadata:
-  name: golearn-secrets
-  namespace: golearn
-type: Opaque
-stringData:
-  DATABASE_URL: "postgres://golearn:CHANGE-ME@postgres.golearn.svc:5432/golearn?sslmode=disable"
+# Credentials are NOT stored here or anywhere in this directory. The API reads
+# DATABASE_URL (and GOLEARN_RUNNER_TOKEN when using the remote runner) from the
+# golearn-secrets Secret that you create out of band — see deploy/k8s/README.md.
