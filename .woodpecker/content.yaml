@@ -1,0 +1,11 @@
+when:
+  - event: [push, pull_request, manual]
+
+steps:
+  - name: content
+    # Compiles and runs every lesson snippet and challenge solution. The Debian image
+    # (not alpine) is deliberate: challenge solutions run under -race, which needs cgo and gcc.
+    image: golang:1.26
+    commands:
+      - export GOMODCACHE="$PWD/.gomodcache" GOCACHE="$PWD/.gocache"
+      - go test ./internal/content/ -count=1 -timeout 30m

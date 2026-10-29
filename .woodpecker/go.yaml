@@ -16,6 +16,17 @@ steps:
       - apk add --no-cache build-base   # -race needs cgo
       - go test -short -race ./...
 
+  - name: windows-compile
+    # Cross-compile and vet only. GitHub Actions executes the tests on a real Windows
+    # runner; Woodpecker's Docker backend cannot, so this catches build breaks but not
+    # Windows runtime failures.
+    image: golang:1.26-alpine
+    depends_on: [vet]
+    commands:
+      - export GOMODCACHE="$PWD/.gomodcache" GOCACHE="$PWD/.gocache"
+      - GOOS=windows go build ./...
+      - GOOS=windows go vet ./...
+
   - name: govulncheck
     image: golang:1.26-alpine
     depends_on: [vet]

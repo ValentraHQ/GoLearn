@@ -1,0 +1,82 @@
+when:
+  - event: [push, pull_request, manual]
+
+# Images are built only after every other workflow has passed.
+depends_on: [go, postgres, web, content]
+
+# Everything except a push to Master is build-only (dry-run): it never logs in or pushes.
+# A push to Master publishes to GitHub Container Registry (ghcr.io).
+#
+# Secrets (create in Woodpecker, limited to the `push` event and these plugin images;
+# never put values in this file):
+#   ghcr_username   the GitHub user or bot that owns the token
+#   ghcr_token      a token with write:packages for ghcr.io/valentrahq
+#
+# Requires the Woodpecker server to allow the buildx plugin as privileged
+# (WOODPECKER_PLUGINS_PRIVILEGED). Package names must be lowercase on ghcr.io.
+steps:
+  - name: api-image-check
+    image: woodpeckerci/plugin-docker-buildx
+    when:
+      - event: [pull_request, manual]
+      - event: push
+        branch:
+          exclude: [Master]
+    settings:
+      repo: ghcr.io/valentrahq/golearn-api
+      tags: ci
+      dockerfile: deploy/Dockerfile
+      target: api
+      context: .
+      dry-run: true
+
+  - name: runner-image-check
+    image: woodpeckerci/plugin-docker-buildx
+    when:
+      - event: [pull_request, manual]
+      - event: push
+        branch:
+          exclude: [Master]
+    settings:
+      repo: ghcr.io/valentrahq/golearn-runner
+      tags: ci
+      dockerfile: deploy/runner.Dockerfile
+      context: .
+      dry-run: true
+
+  - name: api-image-publish
+    image: woodpeckerci/plugin-docker-buildx
+    when:
+      - event: push
+        branch: Master
+    settings:
+      registry: ghcr.io
+      repo: ghcr.io/valentrahq/golearn-api
+      tags:
+        - latest
+        - ${CI_COMMIT_SHA}
+      dockerfile: deploy/Dockerfile
+      target: api
+      context: .
+      username:
+        from_secret: ghcr_username
+      password:
+        from_secret: ghcr_token
+
+  - name: runner-image-publish
+    image: woodpeckerci/plugin-docker-buildx
+    when:
+      - event: push
+        branch: Master
+    settings:
+      registry: ghcr.io
+      repo: ghcr.io/valentrahq/golearn-runner
+      tags:
+        - latest
+        - ${CI_COMMIT_SHA}
+      dockerfile: deploy/runner.Dockerfile
+      context: .
+      username:
+        from_secret: ghcr_username
+      password:
+        from_secret: ghcr_token
