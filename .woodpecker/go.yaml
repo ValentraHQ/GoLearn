@@ -1,0 +1,33 @@
+# DRAFT, UNTESTED. Translation of the "go" job in .github/workflows/ci.yml for the Woodpecker PoC.
+# Prepared locally by the assessor; NOT committed or pushed to the repository (the owner decides whether to commit it).
+when:
+  - event: [push, pull_request, manual]
+
+steps:
+  - name: vet
+    image: golang:1.26-alpine
+    environment:
+      GOMODCACHE: ${CI_WORKSPACE}/.gomodcache
+      GOCACHE: ${CI_WORKSPACE}/.gocache
+    commands:
+      - go vet ./...
+
+  - name: test
+    image: golang:1.26-alpine
+    depends_on: [vet]
+    environment:
+      GOMODCACHE: ${CI_WORKSPACE}/.gomodcache
+      GOCACHE: ${CI_WORKSPACE}/.gocache
+    commands:
+      - apk add --no-cache build-base   # -race needs cgo; the GitHub runner image already has a C toolchain
+      - go test -short -race ./...
+
+  - name: govulncheck
+    image: golang:1.26-alpine
+    depends_on: [vet]
+    environment:
+      GOMODCACHE: ${CI_WORKSPACE}/.gomodcache
+      GOCACHE: ${CI_WORKSPACE}/.gocache
+    commands:
+      # Kept as in the original workflow (@latest, unpinned). Pinning is a separate decision.
+      - go run golang.org/x/vuln/cmd/govulncheck@latest ./...
