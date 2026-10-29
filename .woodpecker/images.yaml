@@ -14,6 +14,11 @@ depends_on: [go, postgres, web, content]
 #
 # Requires the Woodpecker server to allow the buildx plugin as privileged
 # (WOODPECKER_PLUGINS_PRIVILEGED). Package names must be lowercase on ghcr.io.
+#
+# Visibility: this file cannot set it. A package first created by a push is private
+# unless it is linked to a public repository, so the images deliberately carry no
+# org.opencontainers.image.source label. Do not add one, and check Package settings
+# after the first push that the visibility reads Private.
 steps:
   - name: api-image-check
     image: woodpeckerci/plugin-docker-buildx
@@ -54,7 +59,7 @@ steps:
       repo: ghcr.io/valentrahq/golearn-api
       tags:
         - latest
-        - ${CI_COMMIT_SHA}
+        - ${CI_COMMIT_SHA:0:8}
       dockerfile: deploy/Dockerfile
       target: api
       context: .
@@ -73,7 +78,7 @@ steps:
       repo: ghcr.io/valentrahq/golearn-runner
       tags:
         - latest
-        - ${CI_COMMIT_SHA}
+        - ${CI_COMMIT_SHA:0:8}
       dockerfile: deploy/runner.Dockerfile
       context: .
       username:
