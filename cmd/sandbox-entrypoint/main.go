@@ -15,7 +15,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/valentrahq/golearn/internal/runner"
@@ -40,6 +39,9 @@ func fail(msg string) runner.Result {
 }
 
 func handle() runner.Result {
+	if err := supported(); err != nil {
+		return fail(err.Error())
+	}
 	var req runner.Request
 	if err := json.NewDecoder(io.LimitReader(os.Stdin, maxInput)).Decode(&req); err != nil {
 		return fail("invalid request: " + err.Error())
@@ -89,8 +91,7 @@ func execute(cmd *exec.Cmd, dir string, env []string, limit time.Duration) runne
 	defer cancel()
 	cmd = exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...)
 	cmd.Dir, cmd.Env = dir, env
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) }
+	ownProcessGroup(cmd)
 	cmd.WaitDelay = 2 * time.Second
 	var so, se capped
 	so.max, se.max = maxOut, 64<<10
@@ -109,9 +110,9 @@ func execute(cmd *exec.Cmd, dir string, env []string, limit time.Duration) runne
 	if err != nil {
 		if ee, ok := err.(*exec.ExitError); ok {
 			res.ExitCode = ee.ExitCode()
-			if ws, ok := ee.Sys().(syscall.WaitStatus); ok && ws.Signaled() {
+			if sig, ok := signalName(ee); ok {
 				// Typically the kernel OOM killer when the memory limit is hit.
-				res.Stderr += fmt.Sprintf("\nProcess was killed by signal %q (often the memory limit).\n", ws.Signal())
+				res.Stderr += fmt.Sprintf("\nProcess was killed by signal %q (often the memory limit).\n", sig)
 			}
 		} else {
 			res.ExitCode = 1
